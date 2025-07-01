@@ -29,55 +29,24 @@ await client.db("admin").command({ ping: 1 });
 }
 ```
 
-3. Add Your production domains to your cors configuration
+3. convert firbase service key to base64 string
 
 ```js
-//Must remove "/" from your production URL
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://career-portal-ph.web.app",
-      "https://career-portal-ph.firebaseapp.com",
-    ],
-    credentials: true,
-  })
-);
+const fs = require('fs');
+const key = fs.readFileSync('./firebase-admin-service-key.json', 'utf8')
+const base64 = Buffer.from(key).toString('base64')
+console.log(base64)
 ```
 
-4. Let's create a cookie options for both production and local server for vercel
+4. use the service account from env variable
 
 ```js
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-};
-//localhost:5000 and localhost:5173 are treated as same site.  so sameSite value must be strict in development server.  in production sameSite will be none
-// in development server secure will false .  in production secure will be true
+// const serviceAccount = require("./firebase-admin-key.json");
+
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8')
+const serviceAccount = JSON.parse(decoded);
 ```
 
-## now we can use this object for cookie option to modify cookies
-
-```js
-//creating Token
-app.post("/jwt", logger, async (req, res) => {
-  const user = req.body;
-  console.log("user for token", user);
-  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
-
-  res.cookie("token", token, cookieOptions).send({ success: true });
-});
-
-//clearing Token
-app.post("/logout", async (req, res) => {
-  const user = req.body;
-  console.log("logging out", user);
-  res
-    .clearCookie("token", { ...cookieOptions, maxAge: 0 })
-    .send({ success: true });
-});
-```
 
 5. Deploy to Vercel
 
@@ -86,9 +55,11 @@ app.post("/logout", async (req, res) => {
 vercel
 vercel --prod
 - After completed the deployment . click on inspect link and copy the production domain
-- setup your environment variables in vercel
-- check your public API
 ```
+
+5. Setup your environment variables in vercel
+- check your public API
+
 
 <img src="https://i.ibb.co.com/dgH40d3/Screenshot-3.jpg"/>
 
